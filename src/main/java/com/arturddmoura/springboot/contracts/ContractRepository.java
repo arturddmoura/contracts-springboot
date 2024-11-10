@@ -1,44 +1,70 @@
 package com.arturddmoura.springboot.contracts;
 
-import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.Assert;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public class ContractRepository {
-    private final List<Contract> contracts = new ArrayList<>();
 
-    List<Contract> findAll() {
-        return contracts;
+    private static final Logger log = LoggerFactory.getLogger(ContractRepository.class);
+    private final JdbcClient jdbcClient;
+
+    public ContractRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
     }
 
-    Contract findById(UUID id) {
-        return contracts.stream().filter(contract -> contract.id().equals(id)).findFirst().orElseThrow(() -> new IllegalArgumentException("Contract not found"));
+    public List<Contract> findAll() {
+        return jdbcClient.sql("SELECT * FROM contracts")
+                .query(Contract.class)
+                .list();
     }
 
-    void create(Contract contract) {
-        contracts.add(contract);
+    public Optional<Contract> findById(UUID id) {
+        return jdbcClient.sql("SELECT * FROM contracts WHERE \"id\" = :id")
+                .param("id", id)
+                .query(Contract.class)
+                .optional();
     }
 
-    void update(UUID id, Contract contract) {
-        Contract existingContract = findById(id);
-        if (existingContract != null) {
-            contracts.set(contracts.indexOf(existingContract), contract);
-        }
+    public void create(Contract contract) {
+        var created = jdbcClient.sql("INSERT INTO contracts (\"id\", \"status\", \"key\", \"area\", \"product\", \"contract_date\", \"created_by\") VALUES (:id, :status, :key, :area, :product, :contract_date, :created_by)").param("id", contract.id())
+                .param("status", contract.status().name())
+                .param("key", contract.key())
+                .param("area", contract.area().name())
+                .param("product", contract.product().name())
+                .param("contract_date", contract.contractDate())
+                .param("created_by", contract.createdBy())
+                .update();
+
+        Assert.state(created == 1, "Contract not created" + contract.key());
     }
 
-    void delete(UUID id) {
-        contracts.removeIf(contract -> contract.id().equals(id));
+    public void update(UUID id, Contract contract) {
+        var updated = jdbcClient.sql("UPDATE contracts SET \"status\" = :status, \"key\" = :key, \"area\" = :area, \"product\" = :product, \"contract_date\" = :contract_date, \"created_by\" = :created_by WHERE \"id\" = :id")
+                .param("id", id)
+                .param("status", contract.status().name())
+                .param("key", contract.key())
+                .param("area", contract.area().name())
+                .param("product", contract.product().name())
+                .param("contract_date", contract.contractDate())
+                .param("created_by", contract.createdBy())
+                .update();
+
+        Assert.state(updated == 1, "Contract not updated" + contract.key());
     }
 
-    @PostConstruct
-    private void init() {
-        contracts.add(new Contract(UUID.randomUUID(), "SP-1", Areas.sales, Products.software_purchase, LocalDateTime.now()));
-        contracts.add(new Contract(UUID.randomUUID(), "SP-2", Areas.sales, Products.software_sale, LocalDateTime.now()));
-        contracts.add(new Contract(UUID.randomUUID(), "SP-3", Areas.sales, Products.software_purchase, LocalDateTime.now()));
+    public void delete(UUID id) {
+        var deleted = jdbcClient.sql("DELETE FROM contracts WHERE \"id\" = :id")
+                .param("id", id)
+                .update();
+
+        Assert.state(deleted == 1, "Contract not deleted" + id);
     }
 }

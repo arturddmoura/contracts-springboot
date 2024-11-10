@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -22,9 +23,9 @@ public class ContractController {
     }
 
     @GetMapping("/{id}")
-    ResponseEntity<Contract> findById(@PathVariable UUID id) {
+    ResponseEntity<Optional<Contract>> findById(@PathVariable UUID id) {
         try {
-            Contract contract = contractRepository.findById(id);
+            Optional<Contract> contract = contractRepository.findById(id);
             return new ResponseEntity<>(contract, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

@@ -6,6 +6,7 @@ import com.arturddmoura.springboot.contracts.Products;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @SpringBootApplication
@@ -15,7 +16,7 @@ public class Application {
         SpringApplication.run(Application.class, args);
 
         UUID randomUUID = UUID.randomUUID();
-        Contract contract = new Contract(randomUUID, String.format("SP-%s", randomUUID), Areas.sales.name(), Products.software_purchase.name());
+        Contract contract = new Contract(randomUUID, String.format("SP-%s", randomUUID), Areas.sales, Products.software_purchase, LocalDateTime.now());
         System.out.println(contract);
     }
 
